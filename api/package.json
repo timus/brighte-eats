@@ -1,0 +1,23 @@
+{
+  "name": "brighte-eats-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@apollo/server": "4.10.0",
+    "graphql": "16.8.1",
+    "sequelize": "6.37.0",
+    "mysql2": "3.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.0",
+    "jest": "29.7.0",
+    "tsx": "4.7.0",
+    "typescript": "5.4.0"
+  }
+}
