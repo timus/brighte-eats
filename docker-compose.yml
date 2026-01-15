@@ -1,31 +1,18 @@
 services:
-  db:
-    image: mysql:8.0
-    environment:
-      MYSQL_DATABASE: brighte
-      MYSQL_USER: brighte
-      MYSQL_PASSWORD: brighte
-      MYSQL_ROOT_PASSWORD: root
-    ports:
-      - "3306:3306"
-
-
   api:
     build: ./api
-    environment:
-      DATABASE_URL: mysql://brighte:brighte@db:3306/brighte
-      PORT: 3000
-    depends_on:
-      db:
-        condition: service_healthy
     ports:
       - "3000:3000"
+    environment:
+      DATABASE_URL: "file:/app/.data/app.db"
+    volumes:
+      - ./api/.data:/app/.data
 
   web:
     build: ./web
-    environment:
-      VITE_GRAPHQL_URL: http://localhost:3000/graphql
-    depends_on:
-      - api
     ports:
       - "5173:5173"
+    environment:
+      VITE_GRAPHQL_URL: "http://localhost:3000/graphql"
+    depends_on:
+      - api
