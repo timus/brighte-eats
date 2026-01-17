@@ -6,6 +6,14 @@ export const typeDefs = gql`
     PICK_UP
     PAYMENT
   }
+  
+  input RegisterInput {
+    name: String!
+    email: String!
+    mobile: String!
+    postcode: String!
+    services: [EatsService!]!
+  }
 
   type Lead {
     id: ID!
@@ -25,5 +33,9 @@ export const typeDefs = gql`
   type Query {
     leads(filter: LeadFilter): [Lead!]!
     lead(id: ID!): Lead
+  }
+  
+  type Mutation {
+    register(input: RegisterInput!): Lead!
   }
 `
