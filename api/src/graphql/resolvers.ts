@@ -1,58 +1,29 @@
-type EatsService = 'DELIVERY' | 'PICK_UP' | 'PAYMENT'
+import { leadRepository } from '../db/bootstrap'
 
-type Lead = {
-    id: string
-    name: string
-    email: string
-    mobile: string
-    postcode: string
-    services: EatsService[]
-    createdAt: string
-}
+type LeadFilter = { email?: string; postcode?: string }
 
-const leads: Lead[] = [
-    {
-        id: '1',
-        name: 'Sumit',
-        email: 'sumit@test.com',
-        mobile: '0400000000',
-        postcode: '2000',
-        services: ['DELIVERY', 'PAYMENT'],
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: '2',
-        name: 'Alex',
-        email: 'alex@test.com',
-        mobile: '0411111111',
-        postcode: '2150',
-        services: ['PICK_UP'],
-        createdAt: new Date().toISOString()
-    }
-]
+const toServices = (rows: Array<{ service: string }> = []) => rows.map((r) => r.service)
+
+const toLeadDto = (lead: any) => ({
+    id: String(lead.id),
+    name: lead.customer.name,
+    email: lead.customer.email,
+    mobile: lead.customer.mobile,
+    postcode: lead.customer.postcode,
+    services: toServices(lead.services),
+    createdAt: lead.createdAt.toISOString()
+})
 
 export const resolvers = {
     Query: {
-        leads: (
-            _: unknown,
-            args: { filter?: { email?: string; postcode?: string } }
-        ) => {
-            const filter = args.filter
-            if (!filter) return leads
-
-            return leads.filter(lead => {
-                if (filter.email && lead.email !== filter.email) {
-                    return false
-                }
-                if (filter.postcode && lead.postcode !== filter.postcode) {
-                    return false
-                }
-                return true
-            })
+        leads: async (_: unknown, args: { filter?: LeadFilter }) => {
+            const rows = await leadRepository.listLeads(args.filter)
+            return rows.map(toLeadDto)
         },
 
-        lead: (_: unknown, args: { id: string }) => {
-            return leads.find(l => l.id === args.id) ?? null
+        lead: async (_: unknown, args: { id: string }) => {
+            const row = await leadRepository.getLeadById(Number(args.id))
+            return row ? toLeadDto(row) : null
         }
     }
 }
