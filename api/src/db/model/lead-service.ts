@@ -1,21 +1,34 @@
-import {DataTypes, type Sequelize} from 'sequelize'
+import { DataTypes, type Model, type Optional, type Sequelize } from 'sequelize'
+
+export type LeadServiceAttributes = {
+    leadId: number
+    service: string
+}
+
+
+export type LeadServiceCreationAttributes = Optional<LeadServiceAttributes, never>
+
+export type LeadServiceInstance = Model<
+    LeadServiceAttributes,
+    LeadServiceCreationAttributes
+>
 
 export const LeadServiceModel = (sequelize: Sequelize) =>
-    sequelize.define(
+    sequelize.define<LeadServiceInstance>(
         'LeadService',
         {
             leadId: {
                 type: DataTypes.INTEGER,
-                allowNull: false
+                allowNull: false,
             },
             service: {
                 type: DataTypes.STRING,
-                allowNull: false
-            }
+                allowNull: false,
+            },
         },
         {
             tableName: 'lead_services',
             timestamps: false,
-            indexes: [{ unique: true, fields: ['leadId', 'service'] }]
+            indexes: [{ unique: true, fields: ['leadId', 'service'] }],
         }
     )

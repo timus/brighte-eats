@@ -1,32 +1,29 @@
-import type {ModelStatic} from 'sequelize'
-
-type LeadFilter = { email?: string; postcode?: string }
+import type { ModelStatic, WhereOptions } from 'sequelize'
+import type { LeadFilter, RegisterInput } from '../types'
+import {CustomerAttributes, CustomerInstance} from "../db/model/customer";
+import {LeadInstance} from "../db/model/lead";
+import {LeadServiceInstance} from "../db/model/lead-service";
 
 type Models = {
-    Customer: ModelStatic<any>
-    Lead: ModelStatic<any>
-    LeadService: ModelStatic<any>
+    Customer: ModelStatic<CustomerInstance>
+    Lead: ModelStatic<LeadInstance>
+    LeadService: ModelStatic<LeadServiceInstance>
 }
 
-type EatsService = 'DELIVERY' | 'PICK_UP' | 'PAYMENT'
-
-type RegisterInput = {
-    name: string
-    email: string
-    mobile: string
-    postcode: string
-    services: EatsService[]
-}
+type CustomerWhere = WhereOptions<Pick<CustomerAttributes, 'email' | 'postcode'>>
 
 export class LeadRepository {
-    constructor(private models: Models) {
-    }
+    constructor(private models: Models) {}
 
     async listLeads(filter?: LeadFilter) {
-        const customerWhere: Record<string, any> = {}
+        const customerWhere: CustomerWhere = {}
 
-        if (filter?.email) customerWhere.email = filter.email
-        if (filter?.postcode) customerWhere.postcode = filter.postcode
+        if (filter?.email) {
+            customerWhere.email = filter.email
+        }
+        if (filter?.postcode) {
+            customerWhere.postcode = filter.postcode
+        }
 
         return this.models.Lead.findAll({
             order: [['createdAt', 'DESC']],
@@ -34,9 +31,9 @@ export class LeadRepository {
                 {
                     model: this.models.Customer,
                     as: 'customer',
-                    ...(Object.keys(customerWhere).length ? {where: customerWhere} : {}),
+                    ...(Object.keys(customerWhere).length ? { where: customerWhere } : {}),
                 },
-                {model: this.models.LeadService, as: 'services'},
+                { model: this.models.LeadService, as: 'services' },
             ],
         })
     }
@@ -44,8 +41,8 @@ export class LeadRepository {
     async getLeadById(id: number) {
         return this.models.Lead.findByPk(id, {
             include: [
-                {model: this.models.Customer, as: 'customer'},
-                {model: this.models.LeadService, as: 'services'},
+                { model: this.models.Customer, as: 'customer' },
+                { model: this.models.LeadService, as: 'services' },
             ],
         })
     }
@@ -54,7 +51,7 @@ export class LeadRepository {
         const services = [...new Set(input.services)]
 
         const [customer] = await this.models.Customer.findOrCreate({
-            where: {email: input.email},
+            where: { email: input.email },
             defaults: {
                 name: input.name,
                 email: input.email,
@@ -70,18 +67,20 @@ export class LeadRepository {
         })
 
         const lead = await this.models.Lead.create({
-            customerId: customer.getDataValue('id'),
+            customerId: customer.getDataValue('id') as number,
         })
+
+        const leadId = lead.getDataValue('id') as number
 
         if (services.length) {
             await this.models.LeadService.bulkCreate(
                 services.map((service) => ({
-                    leadId: lead.getDataValue('id'),
+                    leadId,
                     service,
                 }))
             )
         }
 
-        return this.getLeadById(lead.getDataValue('id'))
+        return this.getLeadById(leadId)
     }
 }
