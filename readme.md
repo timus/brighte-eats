@@ -47,7 +47,7 @@ npm run coverage
 ```
 
 ## Note
-The frontend implementation is intentionally minimal and built for demonstration purposes only. As a result, no automated tests have been added for the frontend.
+The frontend implementation is intentionally minimal and built for demonstration purposes only. As a result, no  tests have been added for the frontend.
 
 SQLite is used for both the application and test databases for simplicity and portability.
 
