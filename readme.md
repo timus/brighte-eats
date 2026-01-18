@@ -13,7 +13,7 @@ This project is a simple application to collect expressions of interest for a ne
 2. **Set up environment variables (Web)**
    
    copy the example dist file
-```sh
+   ```sh
     cp .env.dist .env
 
     ```
