@@ -14,13 +14,8 @@ type Lead = {
     createdAt?: string
 }
 
-const ALL_SERVICES: EatsService[] = ['DELIVERY', 'PICK_UP', 'PAYMENT']
-
-const labelForService = (s: EatsService) => (s === 'PICK_UP' ? 'Pick-up' : s.charAt(0) + s.slice(1).toLowerCase())
-const badgeForService = (s: EatsService) => (s === 'PICK_UP' ? 'PICK-UP' : s)
-
 type LeadFiltersState = {
-    q: string
+    searchQuery: string
     postcode: string
     service: EatsService | ''
 }
@@ -33,58 +28,90 @@ type CreateLeadInput = {
     services: EatsService[]
 }
 
+const SERVICE_META: Record<EatsService, { label: string; badge: string }> = {
+    DELIVERY: { label: 'Delivery', badge: 'DELIVERY' },
+    PICK_UP: { label: 'Pick-up', badge: 'PICK-UP' },
+    PAYMENT: { label: 'Payment', badge: 'PAYMENT' },
+}
+
+const SERVICES: EatsService[] = Object.keys(SERVICE_META) as EatsService[]
+
+const getServiceLabel = (service: EatsService) => SERVICE_META[service].label
+const getServiceBadge = (service: EatsService) => SERVICE_META[service].badge
+
+const formatDate = (iso?: string) => {
+    if (!iso) {
+        return '—'
+    }
+    const date = new Date(iso)
+    return date.toLocaleString('en-AU', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+}
+
+const TABLE_HEADERS = ['Name', 'Email', 'Postcode', 'Lead Date', 'Services'] as const
+
 export default function App() {
     const [leads, setLeads] = useState<Lead[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
     const [filters, setFilters] = useState<LeadFiltersState>({
-        q: '',
+        searchQuery: '',
         postcode: '',
         service: '',
     })
 
-    const load = async () => {
+    const loadLeads = async () => {
         setLoading(true)
         setError(null)
 
         try {
             const data = await fetchLeads()
             setLeads(data)
-        } catch (e: any) {
-            setError(e?.message ?? 'Failed to load leads')
+        } catch (caught: any) {
+            setError(caught?.message ?? 'Failed to load leads')
         } finally {
             setLoading(false)
         }
     }
 
     useEffect(() => {
-        load()
+        loadLeads()
     }, [])
 
     const filteredLeads = useMemo(() => {
-        const qq = filters.q.trim().toLowerCase()
-        const pc = filters.postcode.trim()
+        const queryText = filters.searchQuery.trim().toLowerCase()
+        const postcodeQuery = filters.postcode.trim()
+        const selectedService = filters.service
 
-        return leads.filter((l) => {
-            const matchesQ = !qq || l.name.toLowerCase().includes(qq) || l.email.toLowerCase().includes(qq)
-            const matchesPostcode = !pc || l.postcode.includes(pc)
-            const matchesService = !filters.service || l.services.includes(filters.service)
+        return leads.filter((lead) => {
+            const matchesQuery =
+                !queryText ||
+                lead.name.toLowerCase().includes(queryText) ||
+                lead.email.toLowerCase().includes(queryText)
 
-            return matchesQ && matchesPostcode && matchesService
+            const matchesPostcode = !postcodeQuery || lead.postcode.includes(postcodeQuery)
+            const matchesService = !selectedService || lead.services.includes(selectedService)
+
+            return matchesQuery && matchesPostcode && matchesService
         })
     }, [leads, filters])
 
     const onCreateLead = async (input: CreateLeadInput) => {
         setError(null)
         await registerLead(input)
-        await load()
+        await loadLeads()
     }
 
     return (
         <div className="page">
             <div className="container">
-                <LeadsToolbar loading={loading} onRefresh={load} />
+                <LeadsToolbar loading={loading} onRefresh={loadLeads} />
 
                 {error && <div className="alert">{error}</div>}
 
@@ -129,7 +156,7 @@ function LeadsToolbar(props: { loading: boolean; onRefresh: () => void }) {
     )
 }
 
-function LeadFilters(props: { value: LeadFiltersState; onChange: (v: LeadFiltersState) => void }) {
+function LeadFilters(props: { value: LeadFiltersState; onChange: (value: LeadFiltersState) => void }) {
     const { value, onChange } = props
 
     return (
@@ -138,8 +165,8 @@ function LeadFilters(props: { value: LeadFiltersState; onChange: (v: LeadFilters
                 <label className="label">Search (name/email)</label>
                 <input
                     className="input"
-                    value={value.q}
-                    onChange={(e) => onChange({ ...value, q: e.target.value })}
+                    value={value.searchQuery}
+                    onChange={(event) => onChange({ ...value, searchQuery: event.target.value })}
                     placeholder="e.g. sumit or @test.com"
                 />
             </div>
@@ -149,7 +176,7 @@ function LeadFilters(props: { value: LeadFiltersState; onChange: (v: LeadFilters
                 <input
                     className="input"
                     value={value.postcode}
-                    onChange={(e) => onChange({ ...value, postcode: e.target.value })}
+                    onChange={(event) => onChange({ ...value, postcode: event.target.value })}
                     placeholder="e.g. 2000"
                 />
             </div>
@@ -159,12 +186,14 @@ function LeadFilters(props: { value: LeadFiltersState; onChange: (v: LeadFilters
                 <select
                     className="input"
                     value={value.service}
-                    onChange={(e) => onChange({ ...value, service: e.target.value as EatsService | '' })}
+                    onChange={(event) => onChange({ ...value, service: event.target.value as EatsService | '' })}
                 >
                     <option value="">All</option>
-                    <option value="DELIVERY">Delivery</option>
-                    <option value="PICK_UP">Pick-up</option>
-                    <option value="PAYMENT">Payment</option>
+                    {SERVICES.map((service) => (
+                        <option key={service} value={service}>
+                            {getServiceLabel(service)}
+                        </option>
+                    ))}
                 </select>
             </div>
         </div>
@@ -179,8 +208,8 @@ function LeadsTable(props: { leads: Lead[]; loading: boolean }) {
             <table>
                 <thead>
                 <tr>
-                    {['Name', 'Email', 'Postcode', 'Services'].map((h) => (
-                        <th key={h}>{h}</th>
+                    {TABLE_HEADERS.map((header) => (
+                        <th key={header}>{header}</th>
                     ))}
                 </tr>
                 </thead>
@@ -188,25 +217,26 @@ function LeadsTable(props: { leads: Lead[]; loading: boolean }) {
                 <tbody>
                 {loading ? (
                     <tr>
-                        <td colSpan={4} style={{ padding: 16, color: '#666' }}>
+                        <td colSpan={TABLE_HEADERS.length} style={{ padding: 16, color: '#666' }}>
                             Loading…
                         </td>
                     </tr>
                 ) : leads.length === 0 ? (
                     <tr>
-                        <td colSpan={4} style={{ padding: 16, color: '#666' }}>
+                        <td colSpan={TABLE_HEADERS.length} style={{ padding: 16, color: '#666' }}>
                             No leads found.
                         </td>
                     </tr>
                 ) : (
-                    leads.map((l) => (
-                        <tr key={l.id}>
-                            <td className="nameCell">{l.name}</td>
-                            <td>{l.email}</td>
-                            <td>{l.postcode}</td>
+                    leads.map((lead) => (
+                        <tr key={lead.id}>
+                            <td className="nameCell">{lead.name}</td>
+                            <td>{lead.email}</td>
+                            <td>{lead.postcode}</td>
+                            <td>{formatDate(lead.createdAt)}</td>
                             <td>
-                                {l.services.length ? (
-                                    <ServiceBadges services={l.services} />
+                                {lead.services.length ? (
+                                    <ServiceBadges services={lead.services} />
                                 ) : (
                                     <span style={{ color: '#888' }}>—</span>
                                 )}
@@ -223,42 +253,57 @@ function LeadsTable(props: { leads: Lead[]; loading: boolean }) {
 function ServiceBadges(props: { services: EatsService[] }) {
     return (
         <div className="badges">
-            {props.services.map((s) => (
-                <span key={s} className="badge">
-          {badgeForService(s)}
+            {props.services.map((service) => (
+                <span key={service} className="badge">
+          {getServiceBadge(service)}
         </span>
             ))}
         </div>
     )
 }
 
-function AddLeadForm(props: { onCreate: (input: CreateLeadInput) => Promise<void>; onError: (msg: string) => void }) {
+function AddLeadForm(props: {
+    onCreate: (input: CreateLeadInput) => Promise<void>
+    onError: (msg: string) => void
+}) {
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [mobile, setMobile] = useState('')
     const [postcode, setPostcode] = useState('')
-    const [selected, setSelected] = useState<Record<EatsService, boolean>>({
+
+    const [selectedServices, setSelectedServices] = useState<Record<EatsService, boolean>>({
         DELIVERY: false,
         PICK_UP: false,
         PAYMENT: false,
     })
+
     const [submitting, setSubmitting] = useState(false)
 
-    const services = ALL_SERVICES.filter((s) => selected[s])
+    const chosenServices = SERVICES.filter((service) => selectedServices[service])
 
     const validate = () => {
-        if (!name.trim()) return 'Name is required'
-        if (!email.trim()) return 'Email is required'
-        if (!mobile.trim()) return 'Mobile is required'
-        if (!postcode.trim()) return 'Postcode is required'
-        if (services.length === 0) return 'Select at least one service'
+        if (!name.trim()) {
+            return 'Name is required'
+        }
+        if (!email.trim()) {
+            return 'Email is required'
+        }
+        if (!mobile.trim()) {
+            return 'Mobile is required'
+        }
+        if (!postcode.trim()) {
+            return 'Postcode is required'
+        }
+        if (chosenServices.length === 0) {
+            return 'Select at least one service'
+        }
         return null
     }
 
-    const onSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        const err = validate()
-        if (err) return props.onError(err)
+    const onSubmit = async (event: React.FormEvent) => {
+        event.preventDefault()
+        const validationError = validate()
+        if (validationError) return props.onError(validationError)
 
         setSubmitting(true)
         try {
@@ -267,52 +312,58 @@ function AddLeadForm(props: { onCreate: (input: CreateLeadInput) => Promise<void
                 email: email.trim(),
                 mobile: mobile.trim(),
                 postcode: postcode.trim(),
-                services,
+                services: chosenServices,
             })
 
             setName('')
             setEmail('')
             setMobile('')
             setPostcode('')
-            setSelected({ DELIVERY: false, PICK_UP: false, PAYMENT: false })
-        } catch (e: any) {
-            props.onError(e?.message ?? 'Failed to register lead')
+            setSelectedServices({ DELIVERY: false, PICK_UP: false, PAYMENT: false })
+        } catch (caught: any) {
+            props.onError(caught?.message ?? 'Failed to register lead')
         } finally {
             setSubmitting(false)
         }
     }
 
-    const toggle = (s: EatsService) => setSelected((prev) => ({ ...prev, [s]: !prev[s] }))
+    const toggleService = (service: EatsService) => {
+        setSelectedServices((previous) => ({ ...previous, [service]: !previous[service] }))
+    }
 
     return (
         <form onSubmit={onSubmit} className="form">
             <div>
                 <label className="label">Name</label>
-                <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+                <input className="input" value={name} onChange={(event) => setName(event.target.value)} />
             </div>
 
             <div>
                 <label className="label">Email</label>
-                <input className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <input className="input" value={email} onChange={(event) => setEmail(event.target.value)} />
             </div>
 
             <div>
                 <label className="label">Mobile</label>
-                <input className="input" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+                <input className="input" value={mobile} onChange={(event) => setMobile(event.target.value)} />
             </div>
 
             <div>
                 <label className="label">Postcode</label>
-                <input className="input" value={postcode} onChange={(e) => setPostcode(e.target.value)} />
+                <input className="input" value={postcode} onChange={(event) => setPostcode(event.target.value)} />
             </div>
 
             <div>
                 <label className="label">Services interested in</label>
                 <div className="checkGroup">
-                    {ALL_SERVICES.map((s) => (
-                        <label key={s} className="checkPill">
-                            <input type="checkbox" checked={selected[s]} onChange={() => toggle(s)} />
-                            <span>{labelForService(s)}</span>
+                    {SERVICES.map((service) => (
+                        <label key={service} className="checkPill">
+                            <input
+                                type="checkbox"
+                                checked={selectedServices[service]}
+                                onChange={() => toggleService(service)}
+                            />
+                            <span>{getServiceLabel(service)}</span>
                         </label>
                     ))}
                 </div>

@@ -1,8 +1,9 @@
 import type { ModelStatic, WhereOptions } from 'sequelize'
 import type { LeadFilter, RegisterInput } from '../types'
-import {CustomerAttributes, CustomerInstance} from "../db/model/customer";
-import {LeadInstance} from "../db/model/lead";
-import {LeadServiceInstance} from "../db/model/lead-service";
+import { CustomerAttributes, CustomerInstance } from '../db/model/customer'
+import { LeadInstance } from '../db/model/lead'
+import { LeadServiceInstance } from '../db/model/lead-service'
+import { logger } from '../logger'
 
 type Models = {
     Customer: ModelStatic<CustomerInstance>
@@ -48,39 +49,49 @@ export class LeadRepository {
     }
 
     async registerLead(input: RegisterInput) {
-        const services = [...new Set(input.services)]
+        const log = logger.child({ email: input.email })
 
-        const [customer] = await this.models.Customer.findOrCreate({
-            where: { email: input.email },
-            defaults: {
+        log.info('registerLead:start')
+
+        try {
+            const services = [...new Set(input.services)]
+
+            const [customer] = await this.models.Customer.findOrCreate({
+                where: { email: input.email },
+                defaults: {
+                    name: input.name,
+                    email: input.email,
+                    mobile: input.mobile,
+                    postcode: input.postcode,
+                },
+            })
+
+            const customerId = customer.getDataValue('id') as number
+            log.info({ customerId }, 'registerLead:customerResolved')
+
+            await customer.update({
                 name: input.name,
-                email: input.email,
                 mobile: input.mobile,
                 postcode: input.postcode,
-            },
-        })
+            })
 
-        await customer.update({
-            name: input.name,
-            mobile: input.mobile,
-            postcode: input.postcode,
-        })
+            const lead = await this.models.Lead.create({ customerId })
+            const leadId = lead.getDataValue('id') as number
+            log.info({ leadId }, 'registerLead:leadCreated')
 
-        const lead = await this.models.Lead.create({
-            customerId: customer.getDataValue('id') as number,
-        })
+            if (services.length) {
+                await this.models.LeadService.bulkCreate(
+                    services.map((service) => ({ leadId, service }))
+                )
+                log.info({ leadId, serviceCount: services.length }, 'registerLead:servicesCreated')
+            } else {
+                log.info({ leadId }, 'registerLead:noServices')
+            }
 
-        const leadId = lead.getDataValue('id') as number
-
-        if (services.length) {
-            await this.models.LeadService.bulkCreate(
-                services.map((service) => ({
-                    leadId,
-                    service,
-                }))
-            )
+            return this.getLeadById(leadId)
+        } catch (err) {
+            log.error({ err }, 'registerLead:failed')
+            throw err
         }
-
-        return this.getLeadById(leadId)
     }
 }

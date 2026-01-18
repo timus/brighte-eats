@@ -12,7 +12,8 @@ export async function fetchLeads() {
             name
             email
             postcode
-            services
+            services,
+            createdAt
           }
         }
       `
