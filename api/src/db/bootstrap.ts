@@ -11,7 +11,9 @@ export const bootstrapDb = async () => {
   await sequelize.sync()
 
   const leadCount = await models.Lead.count()
-  if (leadCount > 0) return
+  if (leadCount > 0) {
+    return
+  }
 
   const customerRecord = await models.Customer.create({
     name: "Sumit",

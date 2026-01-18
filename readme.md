@@ -31,6 +31,72 @@ Web: http://localhost:5173/
 
 API : http://localhost:3000/graphql
 
+# example graphql operation
+
+Mutations
+```
+mutation Register($input: RegisterInput!) {
+  register(input: $input) {
+    id
+    name
+    email
+    mobile
+    postcode
+    services
+    createdAt
+  }
+}
+
+```
+Variables 
+```
+  "input": {
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "mobile": "0400123456",
+    "postcode": "2000",
+    "services": ["DELIVERY", "PICK_UP"]
+  }
+}
+
+
+```
+
+lead
+
+```query Lead($leadId: ID!) {
+  lead(id: $leadId) {
+    id
+    name
+    email
+    mobile
+    postcode
+    services
+    createdAt
+  }
+}
+variable
+{
+  "leadId": "1"
+}
+```
+
+Leads 
+```
+query Leads {
+  leads {
+    id
+    name
+    email
+    mobile
+    postcode
+    services
+    createdAt
+  }
+}
+
+```
+
 
 # How to Run Tests
 
