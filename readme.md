@@ -10,7 +10,8 @@ This project is a simple application to collect expressions of interest for a ne
     cd <project-directory>
     ```
 
-2. **Set up environment variables (Web)::**
+2. **Set up environment variables (Web)**
+   
    copy the example dist file
 ```sh
     cp .env.dist .env
