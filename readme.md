@@ -95,7 +95,22 @@ query Leads {
   }
 }
 
+filters
+
+  "filter": {
+    "email": "john.doe@example.com"
+  }
+}
+
+{
+  "filter": {
+    "postcode": "2000"
+  }
+}
+
 ```
+
+
 
 
 # How to Run Tests
