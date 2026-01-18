@@ -1,4 +1,4 @@
-# Loan Calculator
+# Brighte Eats
 
 This project is a simple application to collect expressions of interest for a new product and allow internal teams to view and manage those leads through a dashboard.
 ## How to Run
