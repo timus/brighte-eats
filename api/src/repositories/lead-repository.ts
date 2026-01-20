@@ -27,7 +27,7 @@ export class LeadRepository {
     if (filter?.postcode) {
       customerWhere.postcode = filter.postcode
     }
-    const pageSize = 1
+    const pageSize = 10
     const pageNo = pagination?.page ?? 1
     const limit = pageSize
     const offset = (pageNo - 1) * pageSize

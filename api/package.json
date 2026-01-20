@@ -6,8 +6,6 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "npx biome lint .",
-    "lint:fix": "npx biome lint . --apply",
     "format": "npx biome format .",
     "format:fix": "npx biome format . --write",
     "check": "npx biome check .",
