@@ -58,7 +58,7 @@ describe("GraphQL resolvers", () => {
       filter: { email: "tim@example.com" },
     })
 
-    expect(leadRepository.listLeads).toHaveBeenCalledWith({ email: "tim@example.com" })
+    expect(leadRepository.listLeads).toHaveBeenCalledWith({ email: "tim@example.com" }, undefined)
     expect(result).toEqual([
       {
         id: "1",

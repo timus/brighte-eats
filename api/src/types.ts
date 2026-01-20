@@ -8,6 +8,10 @@ export type RegisterInput = {
   services: Services[]
 }
 
+export type PaginationInput = {
+  page: number
+}
+
 export type LeadFilter = { email?: string; postcode?: string }
 
 export type Customer = {

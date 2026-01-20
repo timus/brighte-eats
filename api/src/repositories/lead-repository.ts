@@ -1,5 +1,5 @@
 import type { ModelStatic, WhereOptions } from "sequelize"
-import type { LeadFilter, RegisterInput } from "../types"
+import type { LeadFilter, PaginationInput, RegisterInput } from "../types"
 import { CustomerAttributes, CustomerInstance } from "../db/model/customer"
 import { LeadInstance } from "../db/model/lead"
 import { LeadServiceInstance } from "../db/model/lead-service"
@@ -16,8 +16,10 @@ type CustomerWhere = WhereOptions<Pick<CustomerAttributes, "email" | "postcode">
 export class LeadRepository {
   constructor(private models: Models) {}
 
-  async listLeads(filter?: LeadFilter) {
+  async listLeads(filter?: LeadFilter, pagination?: PaginationInput) {
     const customerWhere: CustomerWhere = {}
+    const log = logger.child({ filter: filter, pagination: pagination })
+    log.info("registerLead:start")
 
     if (filter?.email) {
       customerWhere.email = filter.email
@@ -25,9 +27,15 @@ export class LeadRepository {
     if (filter?.postcode) {
       customerWhere.postcode = filter.postcode
     }
+    const pageSize = 1
+    const pageNo = pagination?.page ?? 1
+    const limit = pageSize
+    const offset = (pageNo - 1) * pageSize
 
     return this.models.Lead.findAll({
       order: [["createdAt", "DESC"]],
+      limit: limit,
+      offset: offset,
       include: [
         {
           model: this.models.Customer,

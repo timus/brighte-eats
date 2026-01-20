@@ -2,7 +2,7 @@ import { GraphQLError } from "graphql"
 import { leadRepository } from "../db/bootstrap"
 import { logger } from "../logger"
 
-import type { LeadFilter, RegisterInput } from "../types"
+import { LeadFilter, PaginationInput, RegisterInput } from "../types"
 import type { LeadInstance } from "../db/model/lead"
 import type { CustomerInstance } from "../db/model/customer"
 import type { LeadServiceInstance } from "../db/model/lead-service"
@@ -26,11 +26,17 @@ const toLeadDto = (lead: LeadWithCustomerAndServices) => ({
 
 export const resolvers = {
   Query: {
-    leads: async (_parent: unknown, args: { filter?: LeadFilter }) => {
+    leads: async (
+      _parent: unknown,
+      args: { filter?: LeadFilter; pagination?: PaginationInput },
+    ) => {
       const log = logger.child({ filter: args.filter })
       log.info("graphql:leads")
 
-      const rows = (await leadRepository.listLeads(args.filter)) as LeadWithCustomerAndServices[]
+      const rows = (await leadRepository.listLeads(
+        args.filter,
+        args.pagination,
+      )) as LeadWithCustomerAndServices[]
 
       return rows.map(toLeadDto)
     },

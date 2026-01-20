@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { fetchLeads, registerLead } from './graphqlClient'
 import './App.css'
 
-type EatsService = 'DELIVERY' | 'PICK_UP' | 'PAYMENT'
+type Services = 'DELIVERY' | 'PICK_UP' | 'PAYMENT'
 
 type Lead = {
     id: string
@@ -10,14 +10,14 @@ type Lead = {
     email: string
     mobile?: string
     postcode: string
-    services: EatsService[]
+    services: Services[]
     createdAt?: string
 }
 
 type LeadFiltersState = {
     searchQuery: string
     postcode: string
-    service: EatsService | ''
+    service: Services | ''
 }
 
 type CreateLeadInput = {
@@ -25,19 +25,19 @@ type CreateLeadInput = {
     email: string
     mobile: string
     postcode: string
-    services: EatsService[]
+    services: Services[]
 }
 
-const SERVICE_META: Record<EatsService, { label: string; badge: string }> = {
+const SERVICE_META: Record<Services, { label: string; badge: string }> = {
     DELIVERY: { label: 'Delivery', badge: 'DELIVERY' },
     PICK_UP: { label: 'Pick-up', badge: 'PICK-UP' },
     PAYMENT: { label: 'Payment', badge: 'PAYMENT' },
 }
 
-const SERVICES: EatsService[] = Object.keys(SERVICE_META) as EatsService[]
+const SERVICES: Services[] = Object.keys(SERVICE_META) as Services[]
 
-const getServiceLabel = (service: EatsService) => SERVICE_META[service].label
-const getServiceBadge = (service: EatsService) => SERVICE_META[service].badge
+const getServiceLabel = (service: Services) => SERVICE_META[service].label
+const getServiceBadge = (service: Services) => SERVICE_META[service].badge
 
 const formatDate = (iso?: string) => {
     if (!iso) {
@@ -186,7 +186,7 @@ function LeadFilters(props: { value: LeadFiltersState; onChange: (value: LeadFil
                 <select
                     className="input"
                     value={value.service}
-                    onChange={(event) => onChange({ ...value, service: event.target.value as EatsService | '' })}
+                    onChange={(event) => onChange({ ...value, service: event.target.value as Services | '' })}
                 >
                     <option value="">All</option>
                     {SERVICES.map((service) => (
@@ -250,7 +250,7 @@ function LeadsTable(props: { leads: Lead[]; loading: boolean }) {
     )
 }
 
-function ServiceBadges(props: { services: EatsService[] }) {
+function ServiceBadges(props: { services: Services[] }) {
     return (
         <div className="badges">
             {props.services.map((service) => (
@@ -271,7 +271,7 @@ function AddLeadForm(props: {
     const [mobile, setMobile] = useState('')
     const [postcode, setPostcode] = useState('')
 
-    const [selectedServices, setSelectedServices] = useState<Record<EatsService, boolean>>({
+    const [selectedServices, setSelectedServices] = useState<Record<Services, boolean>>({
         DELIVERY: false,
         PICK_UP: false,
         PAYMENT: false,
@@ -327,7 +327,7 @@ function AddLeadForm(props: {
         }
     }
 
-    const toggleService = (service: EatsService) => {
+    const toggleService = (service: Services) => {
         setSelectedServices((previous) => ({ ...previous, [service]: !previous[service] }))
     }
 
