@@ -106,6 +106,12 @@ filters
   "filter": {
     "postcode": "2000"
   }
+  
+  pagination
+  {
+  "pagination": {
+    "page": 1
+  }
 }
 
 ```
